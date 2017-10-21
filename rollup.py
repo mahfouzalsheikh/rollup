@@ -1,24 +1,17 @@
 #!/usr/bin/python
 
-import sys, getopt
+import sys, getopt, datetime
 
 
-#### this function takes a table and a row as an input and finds the matching row in the table 
-   #  and sums most right values of row and matching row in the table and stores them back in the table.
+#### this function takes a dictionary and a row as an input and finds the matching row in the dictionary 
+   #  and sums the values of row and matching row in the dictionary and stores them back in the dictionary.   
 def aggregateRowWithOutput(output, row):
-    #find the output row width
-    row_width = len(row)
+    if output.has_key(row[0]):
+        output[row[0]] += row[1]
+    else:
+        output[row[0]] = row[1]
 
-    #find a simular set to accumilate with
-    for x in range(0, len(output)):
-        if row[:row_width-1] == output[x][:row_width-1]:
-            output[x][row_width-1] += row[row_width-1]
-            return output
-
-    #if not found then add it, because it is a new set
-    output.append(row)
-
-    return output         
+    return output
 
 #### this function finds the possible sets of columns to aggregate by.
 def generateColumnSets(columns):
@@ -31,7 +24,7 @@ def generateColumnSets(columns):
     
 #### this function loops through all the table rows with all the possible sets of columns and apply the aggregation to the output     
 def rollupTable(table, columns):
-    output = []
+    output = {}
     table_width = len(table[0])
     
     # generate the sets to be used for rolling up     
@@ -39,8 +32,6 @@ def rollupTable(table, columns):
     
 
     for colset in sets: 
-        print colset
-
         for row in table:
         	# unify the size of the rows to be aggregated 
             agg_row = [''] * (len(columns)+1)
@@ -50,12 +41,14 @@ def rollupTable(table, columns):
                 agg_row[colset.index(x)] = row[x]
 
             # set the value of the row
-            print agg_row, row
-            agg_row[len(agg_row)-1] =  row[table_width-1]
+            agg_row[len(agg_row)-1] = row[table_width-1]
             
+            agg_row = ['\t'.join(agg_row[:len(agg_row)-1]), agg_row[-1]]
+
             # aggregate the row with the output 
             output = aggregateRowWithOutput(output, agg_row)
 
+        
     return output
     
 
@@ -90,6 +83,8 @@ def main(argv):
 
     
     #### read the content of the input file and find the headers of the table
+    start_time  = datetime.datetime.now()
+
     with open(inputfile) as f:
         file_content = f.readlines()
 
@@ -99,7 +94,6 @@ def main(argv):
 
     for line in file_content:
         input_line = line.replace('\n','').split('\t')
-        #print input_line, input_line[len(input_line)-1]
         input_line[len(input_line)-1] = int(input_line[len(input_line)-1])
         input_table.append(input_line)
         
@@ -115,7 +109,7 @@ def main(argv):
  
     #### run the rollup aggregation function on the input table and the input columns
     output = rollupTable(input_table, input_columns)
-
+    
 
     #### writing the output to the output file 
     output_file  = open(outputfile, 'w')
@@ -128,10 +122,15 @@ def main(argv):
     output_file.write(output_header_line)
 
     #### writing the rows in the output array to the output file
+
+
     for row in output:
-    	line =  '\t'.join([str(i) for i in row])    	
-    	output_file.write(line+'\n')
+        line = row + '\t' +str(output[row]) +'\n' 	
+    	output_file.write(line)
     
+    done_with = datetime.datetime.now() - start_time
+
+    print "Done within:", done_with
 
 
 if __name__ == "__main__":
