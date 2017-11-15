@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 import sys, getopt, datetime
+import csv
 
 
 #### this function takes a dictionary and a row as an input and finds the matching row in the dictionary 
@@ -10,7 +11,6 @@ def aggregateRowWithOutput(output, row):
         output[row[0]] += row[1]
     else:
         output[row[0]] = row[1]
-
     return output
 
 #### this function finds the possible sets of columns to aggregate by.
@@ -46,7 +46,7 @@ def rollupTable(table, columns):
             agg_row = ['\t'.join(agg_row[:len(agg_row)-1]), agg_row[-1]]
 
             # aggregate the row with the output 
-            output = aggregateRowWithOutput(output, agg_row)
+            aggregateRowWithOutput(output, agg_row)
 
         
     return output
@@ -88,16 +88,14 @@ def main(argv):
     with open(inputfile) as f:
         file_content = f.readlines()
 
-    input_table = []
-    headers = file_content[0].replace('\n','').split('\t')
-    file_content.pop(0)
+    with open(inputfile) as f:
+        reader = csv.reader(f, delimiter="\t")
+        input_table = list(reader)  
 
-    for line in file_content:
-        input_line = line.replace('\n','').split('\t')
-        input_line[len(input_line)-1] = int(input_line[len(input_line)-1])
-        input_table.append(input_line)
-        
-   
+    headers = input_table[0]
+    #remove the headers from the main table
+    input_table.pop(0)
+
     #### find the input column
     input_columns = []
     try:
